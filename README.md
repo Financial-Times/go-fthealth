@@ -1,3 +1,5 @@
+This is a Google Go implementation of the FT health check standard endpoint as a library that integrates nicely with the standard Go http library
+
 Installation:
 
     go get git.svc.ft.com/scm/gl/fthealth.git
