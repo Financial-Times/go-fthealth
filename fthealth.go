@@ -52,6 +52,7 @@ func runChecker(ch Check) CheckResult {
 
 func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 	health := ch.health()
+    w.Header().Add("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	err := enc.Encode(health)
 	if err != nil {
