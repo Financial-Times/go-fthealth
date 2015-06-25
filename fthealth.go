@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type HealthCheck struct {
+type healthCheck struct {
 	name        string
 	description string
 	checks      []Check
@@ -23,7 +23,7 @@ type Check struct {
 	Checker          func() error
 }
 
-func (ch *HealthCheck) health() (result HealthResult) {
+func (ch *healthCheck) health() (result HealthResult) {
 	result.Name = ch.name
 	result.Description = ch.description
 	result.SchemaVersion = 1
@@ -70,11 +70,11 @@ func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 type checkHandler struct {
-	HealthCheck
+	healthCheck
 }
 
 func Handler(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{HealthCheck{name, description, checks}}
+	ch := &checkHandler{healthCheck{name, description, checks}}
 	return ch.handle
 }
 
