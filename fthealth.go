@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type healthCheck struct {
 	name        string
 	description string
 	checks      []Check
+	parallel    bool
 }
 
 type Check struct {
@@ -24,12 +26,36 @@ type Check struct {
 }
 
 func (ch *healthCheck) health() (result HealthResult) {
+	if ch.parallel {
+		return ch.healthParallel()
+	}
+	return ch.healthSequential()
+}
+
+func (ch *healthCheck) healthSequential() (result HealthResult) {
 	result.Name = ch.name
 	result.Description = ch.description
 	result.SchemaVersion = 1
 	for _, checker := range ch.checks {
 		result.Checks = append(result.Checks, runChecker(checker))
 	}
+	return
+}
+
+func (ch *healthCheck) healthParallel() (result HealthResult) {
+	result.Name = ch.name
+	result.Description = ch.description
+	result.SchemaVersion = 1
+	result.Checks = make([]CheckResult, len(ch.checks))
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(ch.checks); i++ {
+		wg.Add(1)
+		go func(i int) {
+			result.Checks[i] = runChecker(ch.checks[i])
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
 	return
 }
 
@@ -74,7 +100,12 @@ type checkHandler struct {
 }
 
 func Handler(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks}}
+	ch := &checkHandler{healthCheck{name, description, checks, false}}
+	return ch.handle
+}
+
+func HandlerParallel(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
+	ch := &checkHandler{healthCheck{name, description, checks, false}}
 	return ch.handle
 }
 
