@@ -2,7 +2,7 @@ This is a Google Go implementation of the FT health check standard endpoint as a
 
 Installation:
 
-    go get git.svc.ft.com/scm/gl/fthealth.git
+    go get github.com/Financial-Times/go-fthealth
 
 Example hello world application with a health check:
 
@@ -10,7 +10,7 @@ Example hello world application with a health check:
 
     import (
             "fmt"
-            "git.svc.ft.com/scm/gl/fthealth.git"
+            "github.com/Financial-Times/go-fthealth"
             "net/http"
     )
 
