@@ -61,7 +61,7 @@ func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	err := enc.Encode(health)
 	if err != nil {
@@ -79,7 +79,7 @@ func Handler(name, description string, checks ...Check) func(w http.ResponseWrit
 }
 
 func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
-	w.Header().Add("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html")
 	t := template.New("healthchecks")
 	t, err := t.Parse(` <!DOCTYPE html>
                             <head>
