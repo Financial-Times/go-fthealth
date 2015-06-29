@@ -105,7 +105,7 @@ func Handler(name, description string, checks ...Check) func(w http.ResponseWrit
 }
 
 func HandlerParallel(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks, false}}
+	ch := &checkHandler{healthCheck{name, description, checks, true}}
 	return ch.handle
 }
 
