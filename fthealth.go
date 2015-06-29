@@ -25,6 +25,11 @@ type Check struct {
 	Checker          func() error
 }
 
+func RunCheck(name, description string, parallel bool, checks ...Check) HealthResult {
+	hc := healthCheck{name, description, checks, parallel}
+	return hc.health()
+}
+
 func (ch *healthCheck) health() (result HealthResult) {
 	if ch.parallel {
 		return ch.healthParallel()
