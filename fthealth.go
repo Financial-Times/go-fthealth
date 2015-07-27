@@ -44,6 +44,10 @@ func (ch *healthCheck) healthSequential() (result HealthResult) {
 	for _, checker := range ch.checks {
 		result.Checks = append(result.Checks, runChecker(checker))
 	}
+	result.Ok = getOverallStatus(result)
+	if result.Ok == false {
+		result.Severity = getOverallSeverity(result)
+	}
 	return
 }
 
@@ -61,7 +65,30 @@ func (ch *healthCheck) healthParallel() (result HealthResult) {
 		}(i)
 	}
 	wg.Wait()
+	result.Ok = getOverallStatus(result)
+	if result.Ok == false {
+		result.Severity = getOverallSeverity(result)
+	}
 	return
+}
+
+func getOverallStatus(result HealthResult) bool {
+	for _, check := range result.Checks {
+		if !check.Ok {
+			return false
+		}
+	}
+	return true
+}
+
+func getOverallSeverity(result HealthResult) uint8 {
+	var severity uint8 = 3
+	for _, check := range result.Checks {
+		if check.Ok == false && check.Severity < severity {
+			severity = check.Severity
+		}
+	}
+	return severity
 }
 
 func runChecker(ch Check) CheckResult {
