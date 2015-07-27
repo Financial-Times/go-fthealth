@@ -20,4 +20,6 @@ type HealthResult struct {
 	Description   string        `json:"description"`
 	Name          string        `json:"name"`
 	SchemaVersion float64       `json:"schemaVersion"`
+	Ok            bool          `json:"ok"`
+	Severity      uint8         `json:"severity,omitempty"`
 }
