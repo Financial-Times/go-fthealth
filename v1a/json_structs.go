@@ -1,4 +1,4 @@
-package fthealthv1a
+package v1a
 
 import (
 	"time"
