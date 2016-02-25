@@ -111,7 +111,7 @@ func runChecker(ch Check) CheckResult {
 	return result
 }
 
-func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
+func (ch *checkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	health := ch.health()
 
 	if strings.Contains(r.Header.Get("Accept"), "text/html") {
@@ -134,12 +134,12 @@ type checkHandler struct {
 
 func Handler(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
 	ch := &checkHandler{healthCheck{name, description, checks, false}}
-	return ch.handle
+	return ch.ServeHTTP
 }
 
 func HandlerParallel(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
 	ch := &checkHandler{healthCheck{name, description, checks, true}}
-	return ch.handle
+	return ch.ServeHTTP
 }
 
 func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
