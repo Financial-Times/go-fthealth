@@ -2,6 +2,7 @@ package v1a
 
 import (
 	"encoding/json"
+	"github.com/goware/httpcoala"
 	"html/template"
 	"net/http"
 	"strings"
@@ -133,12 +134,14 @@ type checkHandler struct {
 }
 
 func Handler(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks, false}}
+	var ch http.Handler = &checkHandler{healthCheck{name, description, checks, false}}
+	ch = httpcoala.Route("GET")(ch)
 	return ch.ServeHTTP
 }
 
 func HandlerParallel(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks, true}}
+	var ch http.Handler = &checkHandler{healthCheck{name, description, checks, true}}
+	ch = httpcoala.Route("GET")(ch)
 	return ch.ServeHTTP
 }
 
