@@ -2,6 +2,7 @@ package fthealth
 
 import (
 	"encoding/json"
+	"github.com/goware/httpcoala"
 	"html/template"
 	"net/http"
 	"strings"
@@ -110,7 +111,7 @@ func runChecker(ch Check) CheckResult {
 	return result
 }
 
-func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
+func (ch *checkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	health := ch.health()
 
 	if strings.Contains(r.Header.Get("Accept"), "text/html") {
@@ -132,13 +133,15 @@ type checkHandler struct {
 }
 
 func Handler(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks, false}}
-	return ch.handle
+	var ch http.Handler = &checkHandler{healthCheck{name, description, checks, false}}
+	ch = httpcoala.Route("GET")(ch)
+	return ch.ServeHTTP
 }
 
 func HandlerParallel(name, description string, checks ...Check) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{healthCheck{name, description, checks, true}}
-	return ch.handle
+	var ch http.Handler = &checkHandler{healthCheck{name, description, checks, true}}
+	ch = httpcoala.Route("GET")(ch)
+	return ch.ServeHTTP
 }
 
 func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
