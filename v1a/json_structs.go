@@ -13,6 +13,7 @@ type CheckResult struct {
 	PanicGuide       string    `json:"panicGuide"`
 	Severity         uint8     `json:"severity"`
 	TechnicalSummary string    `json:"technicalSummary"`
+	Ack              string    `json:"ack,omitempty"`
 }
 
 type HealthResult struct {
