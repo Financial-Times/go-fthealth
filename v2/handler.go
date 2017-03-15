@@ -11,6 +11,11 @@ type checkHandler struct {
 	*HealthCheck
 }
 
+func Handler(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
+	ch := &checkHandler{hc}
+	return ch.handle
+}
+
 func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 	health := ch.health()
 
@@ -26,11 +31,6 @@ func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic("write this bit")
 	}
-}
-
-func Handler(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{hc}
-	return ch.handle
 }
 
 func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
