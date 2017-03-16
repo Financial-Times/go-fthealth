@@ -4,201 +4,135 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"math/rand"
 )
 
-func TestHealthCheck(t *testing.T) {
-
-	const count = 10
-	var delay = time.Millisecond * 20 * count
-
+func createHealthCheck(count int, checkDuration time.Duration, parallel bool, checkWithError bool, checkWithErrorSeverity int) *HealthCheck {
 	checks := make([]Check, count)
-	for i, _ := range checks {
+	for i := range checks {
 		checks[i].Checker = func() (string, error) {
-			time.Sleep(delay)
+			time.Sleep(checkDuration)
 			return "", nil
 		}
+		checks[i].Severity = uint8((i % 3) + 1);
 	}
 
-	hc := &healthCheck{"hc name", "hc desc", checks, false}
-
-	start := time.Now()
-
-	result := hc.health()
-
-	for i := 0; i < count; i++ {
-		if result.Checks[0].Ok != true {
-			t.Error("expected ok")
+	if (checkWithError) {
+		randomIndex := rand.Intn(count);
+		checks[randomIndex].Checker = func() (string, error) {
+			time.Sleep(checkDuration)
+			return "", errors.New("Failure");
 		}
+		checks[randomIndex].Severity = uint8(checkWithErrorSeverity);
 	}
 
-	expDur := count * delay
-	dur := time.Now().Sub(start)
+	return &HealthCheck{"up-mam", "Methode Article Mapper", "This mapps methode articles to internal UPP format.", checks, parallel}
+}
 
-	// round down to seconds
-	expSeconds := expDur.Nanoseconds() / 1000000000
-	actualSeconds := dur.Nanoseconds() / 1000000000
-	if expSeconds != actualSeconds {
-		t.Errorf("expected duration is %ds but actual was %ds \n", expSeconds, actualSeconds)
+func verifyChecksAreOK(result HealthResult, t *testing.T) {
+	for _, check := range result.Checks {
+		if check.Ok != true {
+			t.Error("Check was not OK!")
+		}
 	}
 }
 
-// this test mostly exists to exercise the parallel code and make "go test -race" useful
-func TestHealthCheckParallel(t *testing.T) {
-
-	const count = 10
-	var delay = time.Second * 1
-
-	checks := make([]Check, count)
-	for i, _ := range checks {
-		checks[i].Checker = func() (string, error) {
-			time.Sleep(delay)
-			return "", nil
-		}
+func verifyTimePassedOK(expDur time.Duration, actualDur time.Duration, t *testing.T) {
+	expSec := expDur.Nanoseconds() / 1000000000
+	actualSec := actualDur.Nanoseconds() / 1000000000
+	if expSec != actualSec {
+		t.Errorf("expected duration is %ds but actual was %ds \n", expSec, actualSec)
 	}
+}
 
-	hc := &healthCheck{"hc name", "hc desc", checks, true}
+func verifyResultOK(result HealthResult, expectedOverallSeverity int, t *testing.T) {
+	expectedOK := expectedOverallSeverity == 0;
+	if result.Ok != expectedOK {
+		t.Errorf("expected overall status %b but actual was %b \n", true, result.Ok)
+	}
+	if result.Severity != uint8(expectedOverallSeverity) {
+		t.Errorf("expected overall severity %d but actual was %d \n", expectedOverallSeverity, result.Severity)
+	}
+}
+
+func TestHealthCheckSequential(t *testing.T) {
+	const count = 10
+	delay := time.Millisecond * 20 * count
+
+	hc := createHealthCheck(count, delay, false, false, 0);
 
 	start := time.Now()
-
 	result := hc.health()
 
-	for i := 0; i < count; i++ {
-		if result.Checks[0].Ok != true {
-			t.Error("expected ok")
-		}
-	}
+	verifyChecksAreOK(result, t);
+
+	expDur := time.Duration(count * delay)
+	actualDur := time.Now().Sub(start)
+
+	verifyTimePassedOK(expDur, actualDur, t);
+}
+
+func TestHealthCheckParallel(t *testing.T) {
+	const count = 10
+	delay := time.Second * 1
+
+	hc := createHealthCheck(count, delay, true, false, 0);
+
+	start := time.Now()
+	result := hc.health()
+
+	verifyChecksAreOK(result, t);
 
 	expDur := delay
-	dur := time.Now().Sub(start)
+	actualDur := time.Now().Sub(start)
 
-	// round down to seconds
-	expSeconds := expDur.Nanoseconds() / 1000000000
-	actualSeconds := dur.Nanoseconds() / 1000000000
-	if expSeconds != actualSeconds {
-		t.Errorf("expected duration is %ds but actual was %ds \n", expSeconds, actualSeconds)
-	}
+	verifyTimePassedOK(expDur, actualDur, t);
 }
 
 func TestNonHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
-
 	const count = 3
+	delay := time.Millisecond * 1
+	checkErrorSeverity := 2;
 
-	checks := make([]Check, count)
-	checks[0].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[0].Severity = 3
-
-	checks[1].Checker = func() (string, error) {
-		return "", errors.New("Failure")
-	}
-	checks[1].Severity = 2
-
-	checks[2].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[2].Severity = 1
-	hc := &healthCheck{"hc name", "hc desc", checks, false}
+	hc := createHealthCheck(count, delay, false, true, checkErrorSeverity);
 
 	result := hc.health()
 
-	if result.Ok != false {
-		t.Errorf("expected overall status %b but actual was %b \n", false, result.Ok)
-	}
-	if result.Severity != 2 {
-		t.Errorf("expected overall severity %d but actual was %d \n", 2, result.Severity)
-	}
+	verifyResultOK(result, checkErrorSeverity, t);
 }
 
 func TestNonHealthyCheckForOverallStatusAndSeverityForParallel(t *testing.T) {
-
 	const count = 3
+	delay := time.Millisecond * 1
+	checkErrorSeverity := 2;
 
-	checks := make([]Check, count)
-	checks[0].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[0].Severity = 3
-
-	checks[1].Checker = func() (string, error) {
-		return "", errors.New("Failure")
-	}
-	checks[1].Severity = 2
-
-	checks[2].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[2].Severity = 1
-	hc := &healthCheck{"hc name", "hc desc", checks, true}
+	hc := createHealthCheck(count, delay, true, true, checkErrorSeverity);
 
 	result := hc.health()
 
-	if result.Ok != false {
-		t.Errorf("expected overall status %b but actual was %b \n", false, result.Ok)
-	}
-	if result.Severity != 2 {
-		t.Errorf("expected overall severity %d but actual was %d \n", 2, result.Severity)
-	}
+	verifyResultOK(result, checkErrorSeverity, t);
 }
 
 func TestHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
-
 	const count = 3
+	delay := time.Millisecond * 1
+	checkErrorSeverity := 0;
 
-	checks := make([]Check, count)
-	checks[0].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[0].Severity = 3
-
-	checks[1].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[1].Severity = 2
-
-	checks[2].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[2].Severity = 1
-	hc := &healthCheck{"hc name", "hc desc", checks, false}
+	hc := createHealthCheck(count, delay, false, false, checkErrorSeverity);
 
 	result := hc.health()
 
-	if result.Ok != true {
-		t.Errorf("expected overall status %b but actual was %b \n", true, result.Ok)
-	}
-	if result.Severity != 0 {
-		t.Errorf("expected overall severity %d but actual was %d \n", 0, result.Severity)
-	}
+	verifyResultOK(result, checkErrorSeverity, t);
 }
 
 func TestHealthyCheckForOverallStatusAndSeverityForParallel(t *testing.T) {
-
 	const count = 3
+	delay := time.Millisecond * 1
+	checkErrorSeverity := 0;
 
-	checks := make([]Check, count)
-	checks[0].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[0].Severity = 3
-
-	checks[1].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[1].Severity = 2
-
-	checks[2].Checker = func() (string, error) {
-		return "", nil
-	}
-	checks[2].Severity = 1
-	hc := &healthCheck{"hc name", "hc desc", checks, true}
+	hc := createHealthCheck(count, delay, true, false, checkErrorSeverity);
 
 	result := hc.health()
 
-	if result.Ok != true {
-		t.Errorf("expected overall status %b but actual was %b \n", true, result.Ok)
-	}
-	if result.Severity != 0 {
-		t.Errorf("expected overall severity %d but actual was %d \n", 0, result.Severity)
-	}
+	verifyResultOK(result, checkErrorSeverity, t);
 }
