@@ -1,6 +1,7 @@
 This is a Golang implementation of the FT health check standard endpoint as a library that integrates nicely with the standard Go http library.
 
 LATEST VERSION: v2 package contains the latest FT standards implementation, check example below on how to use it.
+
 Note: The v1a package implementation is DEPRECATED, along with the first implementation which is in the main package!!!
 
 Installation:
