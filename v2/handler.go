@@ -42,15 +42,17 @@ func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
                             </head>
 
                             <body>
-                                <h2>System code: {{ .SystemCode }}</h2>
-                                <h2>Name: {{ .Name }}</h2>
-                                <h2>Description: {{ .Description }}</h2>
+                                <h4>
+                                System code: {{ .SystemCode }}<br>
+                                Name: {{ .Name }}<br>
+                                Description: {{ .Description }}
+                                </h4>
 
-                                <h2>Checks</h2>
+                                <h4>Checks:</h4>
                                 <ul>
                                     {{ range $key, $value := .Checks }}
                                         <li>
-                                            <strong>Name: {{ $value.Name }} </strong>
+                                            <strong>{{ $value.Name }} </strong>
                                             <ul>
                                                 <li> <strong> Ok: {{ $value.Ok }} </strong> </li>
 						<li> Severity: {{ $value.Severity }} </li>
