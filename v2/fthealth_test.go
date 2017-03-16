@@ -79,8 +79,8 @@ func TestHealthCheckSequentialAndParallel(t *testing.T) {
 		verifyChecksAreOK(result, el.name, t)
 
 		expDur := time.Duration(el.count) * el.delay
-		if (el.parallel) {
-			expDur = el.delay;
+		if el.parallel {
+			expDur = el.delay
 		}
 		actualDur := time.Now().Sub(start)
 
