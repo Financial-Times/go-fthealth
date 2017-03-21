@@ -28,39 +28,40 @@ func RunCheck(hc *HealthCheck) HealthResult {
 }
 
 func (ch *HealthCheck) health() (result HealthResult) {
-	ch.setResultBasicInfo(&result)
-	ch.doChecks(ch.Parallel, &result)
-	setResultGlobalOK(&result)
-	return
-}
-
-func (ch *HealthCheck) setResultBasicInfo(result *HealthResult) {
 	result.SchemaVersion = 1
 	result.SystemCode = ch.SystemCode
 	result.Name = ch.Name
 	result.Description = ch.Description
+
+	ch.doChecks(&result)
+
+	result.Ok = ComputeOverallStatus(&result)
+	if result.Ok == false {
+		result.Severity = ComputeOverallSeverity(&result)
+	}
+	return
 }
 
-func (ch *HealthCheck) doChecks(parallel bool, result *HealthResult) {
-	if parallel {
+func (ch *HealthCheck) doChecks(result *HealthResult) {
+	if !ch.Parallel {
+		for _, checker := range ch.Checks {
+			result.Checks = append(result.Checks, checker.runChecker())
+		}
+	} else {
 		result.Checks = make([]CheckResult, len(ch.Checks))
 		wg := sync.WaitGroup{}
 		for i := 0; i < len(ch.Checks); i++ {
 			wg.Add(1)
 			go func(i int) {
-				result.Checks[i] = runChecker(ch.Checks[i])
+				result.Checks[i] = ch.Checks[i].runChecker()
 				wg.Done()
 			}(i)
 		}
 		wg.Wait()
-	} else {
-		for _, checker := range ch.Checks {
-			result.Checks = append(result.Checks, runChecker(checker))
-		}
 	}
 }
 
-func runChecker(ch Check) CheckResult {
+func (ch *Check) runChecker() CheckResult {
 	result := CheckResult{
 		ID:               ch.ID,
 		Name:             ch.Name,
@@ -79,30 +80,4 @@ func runChecker(ch Check) CheckResult {
 		result.CheckOutput = out
 	}
 	return result
-}
-
-func setResultGlobalOK(result *HealthResult) {
-	result.Ok = getOverallStatus(result)
-	if result.Ok == false {
-		result.Severity = getOverallSeverity(result)
-	}
-}
-
-func getOverallStatus(result *HealthResult) bool {
-	for _, check := range result.Checks {
-		if !check.Ok {
-			return false
-		}
-	}
-	return true
-}
-
-func getOverallSeverity(result *HealthResult) uint8 {
-	var severity uint8 = 3
-	for _, check := range result.Checks {
-		if check.Ok == false && check.Severity < severity {
-			severity = check.Severity
-		}
-	}
-	return severity
 }

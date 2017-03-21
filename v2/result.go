@@ -26,3 +26,22 @@ type HealthResult struct {
 	Ok            bool          `json:"ok"`
 	Severity      uint8         `json:"severity,omitempty"`
 }
+
+func ComputeOverallStatus(result *HealthResult) bool {
+	for _, check := range result.Checks {
+		if !check.Ok {
+			return false
+		}
+	}
+	return true
+}
+
+func ComputeOverallSeverity(result *HealthResult) uint8 {
+	var severity uint8 = 3
+	for _, check := range result.Checks {
+		if check.Ok == false && check.Severity < severity {
+			severity = check.Severity
+		}
+	}
+	return severity
+}
