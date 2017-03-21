@@ -5,10 +5,15 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"fmt"
 )
 
 type checkHandler struct {
 	*HealthCheck
+}
+
+type ErrorMessage struct {
+	Message string `json:"message"`
 }
 
 func Handler(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +34,10 @@ func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	err := enc.Encode(health)
 	if err != nil {
-		panic("write this bit")
+		w.WriteHeader(http.StatusInternalServerError)
+		msg, _ := json.Marshal(ErrorMessage{fmt.Sprintf("Failed to encode healthcheck response for % service, erorr was: %v", health.SystemCode, err)})
+		w.Write([]byte(msg))
+		return
 	}
 }
 
