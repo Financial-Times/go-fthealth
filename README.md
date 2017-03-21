@@ -1,3 +1,5 @@
+[![Circle CI](https://circleci.com/gh/Financial-Times/go-fthealth.svg?style=shield)](https://circleci.com/gh/Financial-Times/go-fthealth)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/go-fthealth)](https://goreportcard.com/report/github.com/Financial-Times/go-fthealth) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/go-fthealth/badge.svg)](https://coveralls.io/github/Financial-Times/go-fthealth)
+
 This is a Golang implementation of the FT health check standard endpoint as a library that integrates nicely with the standard Go http library.
 
 LATEST VERSION: v2 package contains the latest FT standards implementation, check example below on how to use it.
