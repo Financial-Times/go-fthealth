@@ -22,7 +22,7 @@ func Handler(hc HC) func(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
-	health := ch.health(ch)
+	health := RunCheck(ch)
 
 	if strings.Contains(r.Header.Get("Accept"), "text/html") {
 		err := writeHTMLResp(w, health)

@@ -5,7 +5,7 @@ import (
 )
 
 type HC interface {
-	health(hc HC) (result HealthResult)
+	initResult(result *HealthResult)
 	doChecks(result *HealthResult)
 }
 
@@ -20,22 +20,22 @@ type HealthCheckSerial struct {
 	HealthCheck
 }
 
-func RunCheck(hc HC) HealthResult {
-	return hc.health(hc)
-}
-
-func (ch HealthCheck) health(hc HC) (result HealthResult) {
-	result.SchemaVersion = 1
-	result.SystemCode = ch.SystemCode
-	result.Name = ch.Name
-	result.Description = ch.Description
-
+func RunCheck(hc HC) (result HealthResult) {
+	hc.initResult(&result)
 	hc.doChecks(&result)
 
 	result.Ok = ComputeOverallStatus(&result)
 	if result.Ok == false {
 		result.Severity = ComputeOverallSeverity(&result)
 	}
+	return
+}
+
+func (ch HealthCheck) initResult(result *HealthResult) {
+	result.SchemaVersion = 1
+	result.SystemCode = ch.SystemCode
+	result.Name = ch.Name
+	result.Description = ch.Description
 	return
 }
 
