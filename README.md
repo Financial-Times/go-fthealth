@@ -25,7 +25,7 @@ Example application with a health check:
         servicesRouter := mux.NewRouter()
 
         checks := []fthealth.Check{HealthCheck("Some proper neo4j url")}
-        healthCheck := &fthealth.HealthCheck{SystemCode: "upp-relations-api", Name: "Relations API", Description: "Retrieves content collection relations from Neo4j", Checks: checks, Parallel: true}
+        healthCheck := &fthealth.HealthCheck{SystemCode: "upp-relations-api", Name: "Relations API", Description: "Retrieves content collection relations from Neo4j", Checks: checks}
         servicesRouter.HandleFunc("/__health", fthealth.Handler(healthCheck))
 
         err := http.ListenAndServe(":8080", servicesRouter)

@@ -2,14 +2,15 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
-	"fmt"
 )
 
 type checkHandler struct {
 	*HealthCheck
+	parallel bool
 }
 
 type ErrorMessage struct {
@@ -17,12 +18,17 @@ type ErrorMessage struct {
 }
 
 func Handler(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{hc}
+	ch := &checkHandler{hc, true}
+	return ch.handle
+}
+
+func HandlerSerial(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
+	ch := &checkHandler{hc, false}
 	return ch.handle
 }
 
 func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
-	health := ch.health()
+	health := ch.health(ch.parallel)
 
 	if strings.Contains(r.Header.Get("Accept"), "text/html") {
 		err := writeHTMLResp(w, health)

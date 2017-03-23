@@ -10,7 +10,6 @@ type HealthCheck struct {
 	Name        string
 	Description string
 	Checks      []Check
-	Parallel    bool
 }
 
 type Check struct {
@@ -24,16 +23,20 @@ type Check struct {
 }
 
 func RunCheck(hc *HealthCheck) HealthResult {
-	return hc.health()
+	return hc.health(true)
 }
 
-func (ch *HealthCheck) health() (result HealthResult) {
+func RunCheckSerial(hc *HealthCheck) HealthResult {
+	return hc.health(false)
+}
+
+func (ch *HealthCheck) health(parallel bool) (result HealthResult) {
 	result.SchemaVersion = 1
 	result.SystemCode = ch.SystemCode
 	result.Name = ch.Name
 	result.Description = ch.Description
 
-	ch.doChecks(&result)
+	ch.doChecks(&result, parallel)
 
 	result.Ok = ComputeOverallStatus(&result)
 	if result.Ok == false {
@@ -42,8 +45,8 @@ func (ch *HealthCheck) health() (result HealthResult) {
 	return
 }
 
-func (ch *HealthCheck) doChecks(result *HealthResult) {
-	if !ch.Parallel {
+func (ch *HealthCheck) doChecks(result *HealthResult, parallel bool) {
+	if !parallel {
 		for _, checker := range ch.Checks {
 			result.Checks = append(result.Checks, checker.runChecker())
 		}
