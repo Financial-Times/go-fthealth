@@ -36,7 +36,6 @@ func (ch HealthCheck) initResult(result *HealthResult) {
 	result.SystemCode = ch.SystemCode
 	result.Name = ch.Name
 	result.Description = ch.Description
-	return
 }
 
 func (ch HealthCheck) doChecks(result *HealthResult) {
