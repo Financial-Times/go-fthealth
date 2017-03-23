@@ -81,7 +81,7 @@ func TestHealthCheckSequentialAndParallel(t *testing.T) {
 		result := RunCheck(hc)
 		actualDur := time.Now().Sub(start)
 
-		expDur := 10 * el.delay
+		expDur := time.Duration(el.count) * el.delay
 		if el.parallel {
 			expDur = el.delay
 		}
