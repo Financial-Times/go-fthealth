@@ -2,8 +2,12 @@ package v2
 
 import (
 	"sync"
-	"time"
 )
+
+type HC interface {
+	health(hc HC) (result HealthResult)
+	doChecks(result *HealthResult)
+}
 
 type HealthCheck struct {
 	SystemCode  string
@@ -12,31 +16,21 @@ type HealthCheck struct {
 	Checks      []Check
 }
 
-type Check struct {
-	ID               string
-	Name             string
-	Severity         uint8
-	BusinessImpact   string
-	TechnicalSummary string
-	PanicGuide       string
-	Checker          func() (string, error)
+type HealthCheckSerial struct {
+	HealthCheck
 }
 
-func RunCheck(hc *HealthCheck) HealthResult {
-	return hc.health(true)
+func RunCheck(hc HC) HealthResult {
+	return hc.health(hc)
 }
 
-func RunCheckSerial(hc *HealthCheck) HealthResult {
-	return hc.health(false)
-}
-
-func (ch *HealthCheck) health(parallel bool) (result HealthResult) {
+func (ch HealthCheck) health(hc HC) (result HealthResult) {
 	result.SchemaVersion = 1
 	result.SystemCode = ch.SystemCode
 	result.Name = ch.Name
 	result.Description = ch.Description
 
-	ch.doChecks(&result, parallel)
+	hc.doChecks(&result)
 
 	result.Ok = ComputeOverallStatus(&result)
 	if result.Ok == false {
@@ -45,42 +39,21 @@ func (ch *HealthCheck) health(parallel bool) (result HealthResult) {
 	return
 }
 
-func (ch *HealthCheck) doChecks(result *HealthResult, parallel bool) {
-	if !parallel {
-		for _, checker := range ch.Checks {
-			result.Checks = append(result.Checks, checker.runChecker())
-		}
-	} else {
-		result.Checks = make([]CheckResult, len(ch.Checks))
-		wg := sync.WaitGroup{}
-		for i := 0; i < len(ch.Checks); i++ {
-			wg.Add(1)
-			go func(i int) {
-				result.Checks[i] = ch.Checks[i].runChecker()
-				wg.Done()
-			}(i)
-		}
-		wg.Wait()
+func (ch HealthCheck) doChecks(result *HealthResult) {
+	result.Checks = make([]CheckResult, len(ch.Checks))
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(ch.Checks); i++ {
+		wg.Add(1)
+		go func(i int) {
+			result.Checks[i] = ch.Checks[i].runChecker()
+			wg.Done()
+		}(i)
 	}
+	wg.Wait()
 }
 
-func (ch *Check) runChecker() CheckResult {
-	result := CheckResult{
-		ID:               ch.ID,
-		Name:             ch.Name,
-		Severity:         ch.Severity,
-		BusinessImpact:   ch.BusinessImpact,
-		TechnicalSummary: ch.TechnicalSummary,
-		PanicGuide:       ch.PanicGuide,
-		LastUpdated:      time.Now(),
+func (chs HealthCheckSerial) doChecks(result *HealthResult) {
+	for _, checker := range chs.Checks {
+		result.Checks = append(result.Checks, checker.runChecker())
 	}
-	out, err := ch.Checker()
-	if err != nil {
-		result.Ok = false
-		result.CheckOutput = err.Error()
-	} else {
-		result.Ok = true
-		result.CheckOutput = out
-	}
-	return result
 }

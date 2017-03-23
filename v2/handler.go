@@ -9,26 +9,20 @@ import (
 )
 
 type checkHandler struct {
-	*HealthCheck
-	parallel bool
+	HC
 }
 
 type ErrorMessage struct {
 	Message string `json:"message"`
 }
 
-func Handler(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{hc, true}
-	return ch.handle
-}
-
-func HandlerSerial(hc *HealthCheck) func(w http.ResponseWriter, r *http.Request) {
-	ch := &checkHandler{hc, false}
+func Handler(hc HC) func(w http.ResponseWriter, r *http.Request) {
+	ch := checkHandler{hc}
 	return ch.handle
 }
 
 func (ch *checkHandler) handle(w http.ResponseWriter, r *http.Request) {
-	health := ch.health(ch.parallel)
+	health := ch.health(ch)
 
 	if strings.Contains(r.Header.Get("Accept"), "text/html") {
 		err := writeHTMLResp(w, health)

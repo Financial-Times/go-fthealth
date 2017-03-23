@@ -20,7 +20,7 @@ type specialCheck struct {
 	check  Check
 }
 
-func createHealthCheck(count int, checkDuration time.Duration, specialCheck specialCheck) *HealthCheck {
+func createHealthCheck(count int, checkDuration time.Duration, specialCheck specialCheck, parallel bool) HC {
 	checks := make([]Check, count)
 	for i := range checks {
 		checks[i].Checker = func() (string, error) {
@@ -35,7 +35,11 @@ func createHealthCheck(count int, checkDuration time.Duration, specialCheck spec
 		checks[randomIndex] = specialCheck.check
 	}
 
-	return &HealthCheck{"up-mam", "Methode Article Mapper", "This mapps methode articles to internal UPP format.", checks}
+	if parallel {
+		return HealthCheck{"up-mam", "Methode Article Mapper", "This mapps methode articles to internal UPP format.", checks}
+	} else {
+		return HealthCheckSerial{HealthCheck{"up-mam", "Methode Article Mapper", "This mapps methode articles to internal UPP format.", checks}}
+	}
 }
 
 func verifyChecksAreOK(result HealthResult, tcName string, t *testing.T) {
@@ -71,24 +75,18 @@ func TestHealthCheckSequentialAndParallel(t *testing.T) {
 	}
 
 	for _, el := range testCases {
-		hc := createHealthCheck(el.count, el.delay, el.specialCheck)
+		hc := createHealthCheck(el.count, el.delay, el.specialCheck, el.parallel)
 
 		start := time.Now()
-		var result HealthResult
-		if el.parallel {
-			result = RunCheck(hc)
-		} else {
-			result = RunCheckSerial(hc)
-		}
+		result := RunCheck(hc)
+		actualDur := time.Now().Sub(start)
 
-		verifyChecksAreOK(result, el.name, t)
-
-		expDur := time.Duration(el.count) * el.delay
+		expDur := 10 * el.delay
 		if el.parallel {
 			expDur = el.delay
 		}
-		actualDur := time.Now().Sub(start)
 
+		verifyChecksAreOK(result, el.name, t)
 		verifyTimePassedOK(expDur, actualDur, el.name, t)
 	}
 }
@@ -110,13 +108,8 @@ func TestResultStatusAndSeverityForSequentialAndParallel(t *testing.T) {
 	}
 
 	for _, el := range testCases {
-		hc := createHealthCheck(el.count, el.delay, el.specialCheck)
-		var result HealthResult
-		if el.parallel {
-			result = RunCheck(hc)
-		} else {
-			result = RunCheckSerial(hc)
-		}
+		hc := createHealthCheck(el.count, el.delay, el.specialCheck, el.parallel)
+		result := RunCheck(hc)
 		verifyResultOK(result, el.specialCheck.check.Severity, el.name, t)
 	}
 }

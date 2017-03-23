@@ -24,7 +24,7 @@ Example application with a health check:
     func main() {
         servicesRouter := mux.NewRouter()
 
-        checks := []fthealth.Check{HealthCheck("Some proper neo4j url")}
+        checks := []fthealth.Check{MyCheck("Some proper neo4j url")}
         healthCheck := &fthealth.HealthCheck{SystemCode: "upp-relations-api", Name: "Relations API", Description: "Retrieves content collection relations from Neo4j", Checks: checks}
         servicesRouter.HandleFunc("/__health", fthealth.Handler(healthCheck))
 
@@ -34,7 +34,7 @@ Example application with a health check:
         }
     }
 
-    func HealthCheck(neoURL string) fthealth.Check {
+    func MyCheck(neoURL string) fthealth.Check {
         return fthealth.Check{
             ID:               "check-connectivity-to-neo4j",
             Name:             "Check connectivity to Neo4j",
