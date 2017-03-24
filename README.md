@@ -16,7 +16,7 @@ Example application with a health check:
     
     import (
         "fmt"
-        fthealth "github.com/Financial-Times/go-fthealth/v2"
+        fthealth "github.com/Financial-Times/go-fthealth/v1_1"
         "github.com/gorilla/mux"
         "net/http"
     )
