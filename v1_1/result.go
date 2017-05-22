@@ -15,6 +15,7 @@ type CheckResult struct {
 	CheckOutput      string    `json:"checkOutput"`
 	LastUpdated      time.Time `json:"lastUpdated"`
 	Ack              string    `json:"ack,omitempty"`
+	PanicGuideIsLink bool      `json:"-"`
 }
 
 type HealthResult struct {
