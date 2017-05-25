@@ -1,6 +1,9 @@
 package v1_1
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Check struct {
 	ID               string
@@ -20,6 +23,7 @@ func (ch *Check) runChecker() CheckResult {
 		BusinessImpact:   ch.BusinessImpact,
 		TechnicalSummary: ch.TechnicalSummary,
 		PanicGuide:       ch.PanicGuide,
+		PanicGuideIsLink: strings.HasPrefix(ch.PanicGuide, "http"),
 		LastUpdated:      time.Now(),
 	}
 	out, err := ch.Checker()

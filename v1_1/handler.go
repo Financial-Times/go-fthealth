@@ -66,7 +66,8 @@ func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
 						<li> Severity: {{ $value.Severity }} </li>
                                                 <li> Business impact: {{ $value.BusinessImpact }} </li>
                                                 <li> Technical summary: {{ $value.TechnicalSummary }} </li>
-						<li> Panic guide: <a href="{{ $value.PanicGuide }}">{{ $value.PanicGuide }}</a> </li>
+						{{if $value.PanicGuideIsLink }}<li> Panic guide: <a href="{{ $value.PanicGuide }}">{{ $value.PanicGuide }}</a> </li>
+						{{ else }}<li> Panic guide: <pre>{{ $value.PanicGuide }}</pre> </li>{{ end }}
 						<li> Output: {{ $value.CheckOutput }} </li>
                                                 <li> Last updated: {{ $value.LastUpdated }} </li>
                                             </ul>
