@@ -3,6 +3,7 @@ package v1_1
 import (
 	"strings"
 	"time"
+	"fmt"
 )
 
 type Check struct {
@@ -13,6 +14,7 @@ type Check struct {
 	TechnicalSummary string
 	PanicGuide       string
 	Checker          func() (string, error)
+	Timeout          time.Duration
 }
 
 func (ch *Check) runChecker() CheckResult {
@@ -26,7 +28,7 @@ func (ch *Check) runChecker() CheckResult {
 		PanicGuideIsLink: strings.HasPrefix(ch.PanicGuide, "http"),
 		LastUpdated:      time.Now(),
 	}
-	out, err := ch.Checker()
+	out, err := ch.check()
 	if err != nil {
 		result.Ok = false
 		result.CheckOutput = err.Error()
@@ -35,4 +37,25 @@ func (ch *Check) runChecker() CheckResult {
 		result.CheckOutput = out
 	}
 	return result
+}
+
+func (ch *Check) check() (string, error) {
+	if ch.Timeout != time.Duration(0) {
+		type result struct {
+			out string
+			err error
+		}
+		resultCh := make(chan result)
+		go func() {
+			out, err := ch.Checker()
+			resultCh <- result{out, err}
+		}()
+		select {
+		case <-time.After(ch.Timeout):
+			return "", fmt.Errorf("Timed out after %v second(s)", ch.Timeout.Seconds())
+		case res := <-resultCh:
+			return res.out, res.err
+		}
+	}
+	return ch.Checker()
 }
