@@ -1,9 +1,9 @@
 package v1_1
 
 import (
+	"fmt"
 	"strings"
 	"time"
-	"fmt"
 )
 
 type Check struct {

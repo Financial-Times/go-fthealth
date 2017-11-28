@@ -20,6 +20,7 @@ type HealthCheck struct {
 type HealthCheckSerial struct {
 	HealthCheck
 }
+
 //New type for fail-safe backward compatibility
 type TimedHealthCheck struct {
 	HealthCheck
