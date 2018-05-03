@@ -41,6 +41,6 @@ jobs:
           path: /tmp/test-results
 workflows:
   version: 2
-  test-and-build-docker:
+  test-and-build:
     jobs:
       - build
