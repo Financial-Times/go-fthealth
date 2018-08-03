@@ -45,36 +45,57 @@ func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
 	w.Header().Set("Content-Type", "text/html")
 	t := template.New("healthchecks")
 	t, err := t.Parse(` <!DOCTYPE html>
-                            <head>
-                                <title>{{ .Name }} healthchecks </title>
-                            </head>
+	<head>
+		<title>{{ .Name }} healthchecks </title>
+		<style>
+			h3 {
+				padding: 0.5em 1em;
+				display: inline-block;
+				border-radius: 0.5em;
+				margin: 0;
+			}
+			.ok {
+				background-color: #458b00;
+				color: #fff;
+			}
+			.error {
+				background-color: #b00;
+				color: #fff;
+			}
+			.output {
+				background: #ccc;
+				border: solid thin #999;
+				padding: 0.5em;
+			}
+		</style>
+	</head>
 
-                            <body>
-                                <h4>
-                                System code: {{ .SystemCode }}<br>
-                                Name: {{ .Name }}<br>
-                                Description: {{ .Description }}
-                                </h4>
+	<body>
+		<h1>Healthcheck for {{ .Name }}</h1>
+		<table>
+			<tr><th>Description</th><td>{{ .Description }}</td></tr>
+			<tr><th>System Code</th><td>{{ .SystemCode }}</td></tr>
+			{{if .SystemCode }}<tr>
+				<th>Runbook</th>
+				<td><a href="https://dewey.in.ft.com/runbooks/{{ .SystemCode }}" target="__blank">https://dewey.in.ft.com/runbooks/{{ .SystemCode }}</a></td>
+			</tr>{{ end }}
+		</table>
 
-                                <h4>Checks:</h4>
-                                <ul>
-                                    {{ range $key, $value := .Checks }}
-                                        <li>
-                                            <strong>{{ $value.Name }} </strong>
-                                            <ul>
-                                                <li> <strong> Ok: {{ $value.Ok }} </strong> </li>
-						<li> Severity: {{ $value.Severity }} </li>
-                                                <li> Business impact: {{ $value.BusinessImpact }} </li>
-                                                <li> Technical summary: {{ $value.TechnicalSummary }} </li>
-						{{if $value.PanicGuideIsLink }}<li> Panic guide: <a href="{{ $value.PanicGuide }}">{{ $value.PanicGuide }}</a> </li>
-						{{ else }}<li> Panic guide: <pre>{{ $value.PanicGuide }}</pre> </li>{{ end }}
-						<li> Output: {{ $value.CheckOutput }} </li>
-                                                <li> Last updated: {{ $value.LastUpdated }} </li>
-                                            </ul>
-                                        </li>
-                                    {{ end }}
-                                </ul>
-                            </body>`)
+		<h2>Checks</h2>
+			{{ range $key, $value := .Checks }}
+				<h3 class="{{if $value.Ok }}ok{{ else }}error{{ end }}">{{ $value.Name }}</h3>
+				<ul>
+					<li> Status: {{if $value.Ok }}OK{{ else }}Error{{ end }}</li>
+					<li> Severity: {{ $value.Severity }} </li>
+					<li> Business impact: {{ $value.BusinessImpact }} </li>
+					<li> Technical summary: {{ $value.TechnicalSummary }} </li>
+					{{if $value.PanicGuideIsLink }}<li> Panic guide: <a href="{{ $value.PanicGuide }}">{{ $value.PanicGuide }}</a> </li>
+					{{ else }}<li> Panic guide: <pre>{{ $value.PanicGuide }}</pre> </li>{{ end }}
+					{{if $value.CheckOutput }}<li> Output: <pre class='output'>{{ $value.CheckOutput }}</pre> </li>{{ end }}
+					<li> Last updated: {{ $value.LastUpdated }} </li>
+				</ul>
+			{{ end }}
+	</body>`)
 	if err == nil {
 		t.Execute(w, health)
 	}
