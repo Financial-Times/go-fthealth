@@ -76,8 +76,8 @@ func (ch *Check) check() (string, error) {
 					default:
 						err = errors.New("Unknown error")
 					}
+					resultCh <- result{"", err}
 				}
-				resultCh <- result{"", err}
 				return
 			}()
 			out, err := ch.Checker()
