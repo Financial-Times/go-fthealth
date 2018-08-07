@@ -1,6 +1,7 @@
 package v1_1
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -17,8 +18,23 @@ type Check struct {
 	Timeout          time.Duration
 }
 
-func (ch *Check) runChecker() CheckResult {
-	result := CheckResult{
+func (ch *Check) runChecker() (result CheckResult) {
+
+	// Any panics hit during checking should cause the check to fail
+	defer func() {
+		if rec := recover(); rec != nil {
+			result.Ok = false
+			switch t := rec.(type) {
+				case string:
+					result.CheckOutput = t
+				case error:
+					result.CheckOutput = t.Error()
+				default:
+					result.CheckOutput = "Unknown error returned during check"
+			}
+		}
+	}()
+	result = CheckResult{
 		ID:               ch.ID,
 		Name:             ch.Name,
 		Severity:         ch.Severity,
@@ -36,7 +52,7 @@ func (ch *Check) runChecker() CheckResult {
 		result.Ok = true
 		result.CheckOutput = out
 	}
-	return result
+	return
 }
 
 func (ch *Check) check() (string, error) {
@@ -47,6 +63,23 @@ func (ch *Check) check() (string, error) {
 		}
 		resultCh := make(chan result)
 		go func() {
+
+			// Any panics hit during checking should cause the check to fail
+			defer func() {
+				var err error
+				if rec := recover(); rec != nil {
+					switch t := rec.(type) {
+					case string:
+						err = errors.New(t)
+					case error:
+						err = t
+					default:
+						err = errors.New("Unknown error")
+					}
+					resultCh <- result{"", err}
+				}
+				return
+			}()
 			out, err := ch.Checker()
 			resultCh <- result{out, err}
 		}()

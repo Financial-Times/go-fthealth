@@ -74,7 +74,7 @@ func verifyTimePassedOK(expDur time.Duration, actualDur time.Duration, tcName st
 func verifyResultOK(result HealthResult, expectedOverallSeverity uint8, tcName string, t *testing.T) {
 	expectedOK := expectedOverallSeverity == 0
 	if result.Ok != expectedOK {
-		t.Errorf("TC name: %s, Error was: expected overall status %b but actual was %b \n", tcName, true, result.Ok)
+		t.Errorf("TC name: %s, Error was: expected overall status %t but actual was %t \n", tcName, true, result.Ok)
 	}
 	if result.Severity != expectedOverallSeverity {
 		t.Errorf("TC name: %s, Error was: expected overall severity %d but actual was %d \n", tcName, expectedOverallSeverity, result.Severity)
@@ -125,6 +125,14 @@ func TestResultStatusAndSeverityForSequentialAndParallel(t *testing.T) {
 				return "", errors.New("Failure")
 			}}}},
 		{name: "Overall status and severity, with check error, parallel and timed", count: 3, delay: time.Millisecond * 1, parallel: true, timeout: 3 * time.Second, specialCheck: specialCheck{}},
+		{name: "Checker throws a panic, parallel", count: 1, parallel: true, timeout: 3 * time.Second,
+			specialCheck: specialCheck{true, Check{Severity: 2, Checker: func() (string, error) {
+				panic("Checker did something unexpected")
+			}}}},
+		{name: "Checker throws a panic, sequential", count: 1, parallel: false, timeout: 3 * time.Second,
+			specialCheck: specialCheck{true, Check{Severity: 2, Checker: func() (string, error) {
+				panic("Checker did something unexpected")
+			}}}},
 	}
 
 	for _, el := range testCases {
