@@ -27,6 +27,11 @@ type TimedHealthCheck struct {
 	Timeout time.Duration
 }
 
+type FeedbackHealthCheck struct {
+	HC
+	feedback chan<- bool
+}
+
 func RunCheck(hc HC) (result HealthResult) {
 	hc.initResult(&result)
 	hc.doChecks(&result)
@@ -64,16 +69,26 @@ func (chs HealthCheckSerial) doChecks(result *HealthResult) {
 	}
 }
 
+func (fch FeedbackHealthCheck) initResult(result *HealthResult) {
+	fch.HC.initResult(result)
+}
+
+func (fch FeedbackHealthCheck) doChecks(result *HealthResult) {
+	fch.HC.doChecks(result)
+	fch.feedback <- ComputeOverallStatus(result)
+}
+
 func (ch TimedHealthCheck) doChecks(result *HealthResult) {
-	result.Checks = make([]CheckResult, len(ch.Checks))
+	lc := len(ch.Checks)
+	result.Checks = make([]CheckResult, lc)
 	wg := sync.WaitGroup{}
-	for i := 0; i < len(ch.Checks); i++ {
-		wg.Add(1)
-		go func(i int) {
-			ch.Checks[i].Timeout = ch.Timeout
-			result.Checks[i] = ch.Checks[i].runChecker()
+	wg.Add(lc)
+	for i, c := range ch.Checks {
+		go func(i int, c Check) {
+			c.Timeout = ch.Timeout
+			result.Checks[i] = c.runChecker()
 			wg.Done()
-		}(i)
+		}(i, c)
 	}
 	wg.Wait()
 }

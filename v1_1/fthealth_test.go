@@ -14,6 +14,7 @@ type testCase struct {
 	timeout      time.Duration
 	parallel     bool
 	specialCheck specialCheck
+	assertFunc   func(t *testing.T, hc HC, el testCase) (result HealthResult)
 }
 
 type specialCheck struct {
@@ -45,6 +46,11 @@ func createHealthCheck(count int, checkDuration, timeout time.Duration, specialC
 	} else {
 		return HealthCheckSerial{hc}
 	}
+}
+
+func createFeedbackHealthChecks(count int, checkDuration, timeout time.Duration, specialCheck specialCheck, parallel bool, fb chan bool) HC {
+	hc := createHealthCheck(count, checkDuration, timeout, specialCheck, parallel)
+	return FeedbackHealthCheck{hc, fb}
 }
 
 func verifyChecksAreOK(result HealthResult, tcName string, t *testing.T) {
@@ -90,19 +96,23 @@ func TestHealthCheckSequentialAndParallelAndTimed(t *testing.T) {
 
 	for _, el := range testCases {
 		hc := createHealthCheck(el.count, el.delay, el.timeout, el.specialCheck, el.parallel)
-
-		start := time.Now()
-		result := RunCheck(hc)
-		actualDur := time.Now().Sub(start)
-
-		expDur := time.Duration(el.count) * el.delay
-		if el.parallel {
-			expDur = el.delay
-		}
-
-		verifyChecksAreOK(result, el.name, t)
-		verifyTimePassedOK(expDur, actualDur, el.name, t)
+		assertSequentialAndParallelAndTimed(t, hc, el)
 	}
+}
+
+func assertSequentialAndParallelAndTimed(t *testing.T, hc HC, el testCase) (result HealthResult) {
+	start := time.Now()
+	result = RunCheck(hc)
+	actualDur := time.Now().Sub(start)
+
+	expDur := time.Duration(el.count) * el.delay
+	if el.parallel {
+		expDur = el.delay
+	}
+
+	verifyChecksAreOK(result, el.name, t)
+	verifyTimePassedOK(expDur, actualDur, el.name, t)
+	return result
 }
 
 func TestResultStatusAndSeverityForSequentialAndParallel(t *testing.T) {
@@ -137,9 +147,14 @@ func TestResultStatusAndSeverityForSequentialAndParallel(t *testing.T) {
 
 	for _, el := range testCases {
 		hc := createHealthCheck(el.count, el.delay, el.timeout, el.specialCheck, el.parallel)
-		result := RunCheck(hc)
-		verifyResultOK(result, el.specialCheck.check.Severity, el.name, t)
+		assertHealthCheckStatusAndSeverityForSequentialAndParallel(t, hc, el)
 	}
+}
+
+func assertHealthCheckStatusAndSeverityForSequentialAndParallel(t *testing.T, hc HC, el testCase) (result HealthResult) {
+	result = RunCheck(hc)
+	verifyResultOK(result, el.specialCheck.check.Severity, el.name, t)
+	return result
 }
 
 func TestTimedHealthCheck(t *testing.T) {
@@ -149,11 +164,45 @@ func TestTimedHealthCheck(t *testing.T) {
 
 	for _, el := range testCases {
 		hc := createHealthCheck(el.count, el.delay, el.timeout, el.specialCheck, el.parallel)
-		start := time.Now()
-		result := RunCheck(hc)
-		actualDur := time.Now().Sub(start)
-
-		verifyChecksAreNOTOk(result, el.name, t)
-		verifyTimePassedOK(el.timeout, actualDur, el.name, t)
+		assertTimedHealthCheck(t, hc, el)
 	}
+}
+
+func TestFeedbackHealthCheck(t *testing.T) {
+	testCases := [...]testCase{
+		{name: "Happy flow, parallel checks, timed", count: 3, delay: time.Millisecond * 500, timeout: 100 * time.Millisecond, parallel: true, specialCheck: specialCheck{}, assertFunc: assertTimedHealthCheck},
+		{name: "Overall status and severity, happy flow, sequential", count: 3, delay: time.Millisecond * 1, parallel: false, assertFunc: assertHealthCheckStatusAndSeverityForSequentialAndParallel,
+			specialCheck: specialCheck{true, Check{Severity: 2, Checker: func() (string, error) {
+				time.Sleep(time.Millisecond * 1)
+				return "", errors.New("Failure")
+			}}}},
+		{name: "Happy flow, sequential checks", count: 10, delay: time.Millisecond * 200, parallel: false, specialCheck: specialCheck{}, assertFunc: assertSequentialAndParallelAndTimed},
+		{name: "Happy flow, parallel checks", count: 10, delay: time.Second * 1, parallel: true, specialCheck: specialCheck{}, assertFunc: assertSequentialAndParallelAndTimed},
+		{name: "Happy flow, parallel checks, timed", count: 3, delay: time.Millisecond * 200, timeout: 1 * time.Second, parallel: true, specialCheck: specialCheck{}, assertFunc: assertSequentialAndParallelAndTimed},
+	}
+	for _, el := range testCases {
+		fb := make(chan bool, 1)
+		hc := createFeedbackHealthChecks(el.count, el.delay, el.timeout, el.specialCheck, el.parallel, fb)
+		result := el.assertFunc(t, hc, el)
+		if len(fb) != 1 {
+			close(fb)
+			t.Errorf("Expected 1 item on queue, got %d\n", len(fb))
+		}
+
+		st := <-fb
+		close(fb)
+		if st != result.Ok {
+			t.Errorf("Status was %t and result.ok was %t \n", st, result.Ok)
+		}
+	}
+}
+
+func assertTimedHealthCheck(t *testing.T, hc HC, el testCase) (result HealthResult) {
+	start := time.Now()
+	result = RunCheck(hc)
+	actualDur := time.Now().Sub(start)
+
+	verifyChecksAreNOTOk(result, el.name, t)
+	verifyTimePassedOK(el.timeout, actualDur, el.name, t)
+	return result
 }
