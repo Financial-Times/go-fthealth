@@ -32,6 +32,10 @@ type FeedbackHealthCheck struct {
 	feedback chan<- bool
 }
 
+func NewFeedbackHealthCheck(hc HC, fb chan<- bool) FeedbackHealthCheck {
+	return FeedbackHealthCheck{hc, fb}
+}
+
 func RunCheck(hc HC) (result HealthResult) {
 	hc.initResult(&result)
 	hc.doChecks(&result)

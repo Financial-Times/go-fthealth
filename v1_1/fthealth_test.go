@@ -50,7 +50,7 @@ func createHealthCheck(count int, checkDuration, timeout time.Duration, specialC
 
 func createFeedbackHealthChecks(count int, checkDuration, timeout time.Duration, specialCheck specialCheck, parallel bool, fb chan bool) HC {
 	hc := createHealthCheck(count, checkDuration, timeout, specialCheck, parallel)
-	return FeedbackHealthCheck{hc, fb}
+	return NewFeedbackHealthCheck(hc, fb)
 }
 
 func verifyChecksAreOK(result HealthResult, tcName string, t *testing.T) {
