@@ -77,7 +77,7 @@ func writeHTMLResp(w http.ResponseWriter, health HealthResult) error {
 			<tr><th>System Code</th><td>{{ .SystemCode }}</td></tr>
 			{{if .SystemCode }}<tr>
 				<th>Runbook</th>
-				<td><a href="https://dewey.in.ft.com/runbooks/{{ .SystemCode }}" target="__blank">https://dewey.in.ft.com/runbooks/{{ .SystemCode }}</a></td>
+				<td><a href="https://runbooks.ftops.tech/{{ .SystemCode }}" target="__blank">https://runbooks.ftops.tech/runbooks/{{ .SystemCode }}</a></td>
 			</tr>{{ end }}
 		</table>
 
