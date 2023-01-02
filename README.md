@@ -53,3 +53,4 @@ Example application with a health check:
         }
         return "Error connecting to Neo4j", err
     }
+test
