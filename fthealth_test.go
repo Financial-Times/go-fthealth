@@ -1,9 +1,9 @@
 package fthealth
 
 import (
+	"errors"
 	"testing"
 	"time"
-	"errors"
 )
 
 func TestHealthCheck(t *testing.T) {
@@ -85,17 +85,17 @@ func TestNonHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
 
 	checks := make([]Check, count)
 	checks[0].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[0].Severity = 3
 
 	checks[1].Checker = func() error {
-			return errors.New("Failure")
+		return errors.New("Failure")
 	}
 	checks[1].Severity = 2
-	
+
 	checks[2].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[2].Severity = 1
 	hc := &healthCheck{"hc name", "hc desc", checks, false}
@@ -103,7 +103,7 @@ func TestNonHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
 	result := hc.health()
 
 	if result.Ok != false {
-		t.Errorf("expected overall status %b but actual was %b \n", false, result.Ok)
+		t.Errorf("expected overall status %v but actual was %v", false, result.Ok)
 	}
 	if result.Severity != 2 {
 		t.Errorf("expected overall severity %d but actual was %d \n", 2, result.Severity)
@@ -116,17 +116,17 @@ func TestNonHealthyCheckForOverallStatusAndSeverityForParallel(t *testing.T) {
 
 	checks := make([]Check, count)
 	checks[0].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[0].Severity = 3
 
 	checks[1].Checker = func() error {
-			return errors.New("Failure")
+		return errors.New("Failure")
 	}
 	checks[1].Severity = 2
-	
+
 	checks[2].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[2].Severity = 1
 	hc := &healthCheck{"hc name", "hc desc", checks, true}
@@ -134,13 +134,12 @@ func TestNonHealthyCheckForOverallStatusAndSeverityForParallel(t *testing.T) {
 	result := hc.health()
 
 	if result.Ok != false {
-		t.Errorf("expected overall status %b but actual was %b \n", false, result.Ok)
+		t.Errorf("expected overall status %v but actual was %v \n", false, result.Ok)
 	}
 	if result.Severity != 2 {
 		t.Errorf("expected overall severity %d but actual was %d \n", 2, result.Severity)
 	}
 }
-
 
 func TestHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
 
@@ -148,25 +147,25 @@ func TestHealthyCheckForOverallStatusAndSeverityForSequential(t *testing.T) {
 
 	checks := make([]Check, count)
 	checks[0].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[0].Severity = 3
 
 	checks[1].Checker = func() error {
-			return nil 
+		return nil
 	}
 	checks[1].Severity = 2
-	
+
 	checks[2].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[2].Severity = 1
 	hc := &healthCheck{"hc name", "hc desc", checks, false}
 
 	result := hc.health()
 
-	if result.Ok != true{
-		t.Errorf("expected overall status %b but actual was %b \n", true, result.Ok)
+	if result.Ok != true {
+		t.Errorf("expected overall status %v but actual was %v \n", true, result.Ok)
 	}
 	if result.Severity != 0 {
 		t.Errorf("expected overall severity %d but actual was %d \n", 0, result.Severity)
@@ -179,25 +178,25 @@ func TestHealthyCheckForOverallStatusAndSeverityForParallel(t *testing.T) {
 
 	checks := make([]Check, count)
 	checks[0].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[0].Severity = 3
 
 	checks[1].Checker = func() error {
-			return nil 
+		return nil
 	}
 	checks[1].Severity = 2
-	
+
 	checks[2].Checker = func() error {
-			return nil
+		return nil
 	}
 	checks[2].Severity = 1
 	hc := &healthCheck{"hc name", "hc desc", checks, true}
 
 	result := hc.health()
 
-	if result.Ok != true{
-		t.Errorf("expected overall status %b but actual was %b \n", true, result.Ok)
+	if result.Ok != true {
+		t.Errorf("expected overall status %v but actual was %v \n", true, result.Ok)
 	}
 	if result.Severity != 0 {
 		t.Errorf("expected overall severity %d but actual was %d \n", 0, result.Severity)
