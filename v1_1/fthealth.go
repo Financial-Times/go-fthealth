@@ -21,7 +21,7 @@ type HealthCheckSerial struct {
 	HealthCheck
 }
 
-//New type for fail-safe backward compatibility
+// TimedHealthCheck New type for fail-safe backward compatibility
 type TimedHealthCheck struct {
 	HealthCheck
 	Timeout time.Duration
